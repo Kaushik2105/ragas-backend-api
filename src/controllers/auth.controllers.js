@@ -4,8 +4,8 @@ const config = require('../config/config');
 
 const refreshCookieOptions = {
   httpOnly: true,
-  secure: config.nodeEnv === 'development',
-  sameSite: config.nodeEnv === 'development' ? 'none' : 'lax',
+  secure: config.nodeEnv === 'production',
+  sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
