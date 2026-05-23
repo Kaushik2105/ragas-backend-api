@@ -17,8 +17,19 @@ const adminRoutes = require('./routes/admin.route');
 const app = express();
 
 // Middleware
+const allowedOrigins = (process.env.CLIENT_URLS || config.clientUrl || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: config.clientUrl,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS origin not allowed.'));
+  },
   credentials: true,
 }));
 app.use(express.json());
