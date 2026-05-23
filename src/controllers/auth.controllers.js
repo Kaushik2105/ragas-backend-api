@@ -1,5 +1,13 @@
 const authService = require('../services/auth.services');
 const { sendSuccess, sendError } = require('../utils/response.utils');
+const config = require('../config/config');
+
+const refreshCookieOptions = {
+  httpOnly: true,
+  secure: config.nodeEnv === 'development',
+  sameSite: config.nodeEnv === 'development' ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 const register = async (req, res, next) => {
   try {
@@ -15,12 +23,7 @@ const register = async (req, res, next) => {
     const result = await authService.register({ name, email, password });
 
     // Set refresh token in HTTP-only cookie
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
 
     return sendSuccess(res, 201, 'Registration successful.', {
       user: result.user,
@@ -41,12 +44,7 @@ const login = async (req, res, next) => {
 
     const result = await authService.login({ email, password });
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
 
     return sendSuccess(res, 200, 'Login successful.', {
       user: result.user,
@@ -62,12 +60,7 @@ const refreshToken = async (req, res, next) => {
     const token = req.cookies.refreshToken || req.body.refreshToken;
     const result = await authService.refreshTokenService(token);
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
 
     return sendSuccess(res, 200, 'Token refreshed.', {
       accessToken: result.accessToken,
@@ -110,7 +103,11 @@ const logout = async (req, res, next) => {
   try {
     await authService.logout(req.user.id);
 
-    res.clearCookie('refreshToken');
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: config.nodeEnv === 'production',
+      sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
+    });
     return sendSuccess(res, 200, 'Logged out successfully.');
   } catch (error) {
     next(error);
