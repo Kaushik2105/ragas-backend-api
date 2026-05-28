@@ -1,45 +1,8 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Ensure upload directories exist
-const uploadDir = path.join(__dirname, '../../uploads');
-const audioDir = path.join(uploadDir, 'audio');
-const imageDir = path.join(uploadDir, 'images');
-const avatarDir = path.join(uploadDir, 'avatars');
-
-[uploadDir, audioDir, imageDir, avatarDir].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-});
-
-// Storage config for audio files
-const audioStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, audioDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'audio-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-// Storage config for cover images
-const imageStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, imageDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'cover-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-// Storage config for avatars
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
+// Use memoryStorage — files are held in memory as Buffer objects.
+// Nothing is written to disk, so no uploads/ folder is needed.
+const memoryStorage = multer.memoryStorage();
 
 // File filters
 const audioFilter = (req, file, cb) => {
@@ -60,29 +23,9 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
-// Upload middlewares
-const uploadSong = multer({
-  storage: audioStorage,
-  fileFilter: audioFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-}).fields([
-  { name: 'audio', maxCount: 1 },
-  { name: 'coverImage', maxCount: 1 },
-]);
-
-// Combined upload for song (audio + cover image)
+// Combined upload for song: audio + optional cover image
 const uploadSongFiles = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      if (file.fieldname === 'audio') cb(null, audioDir);
-      else cb(null, imageDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const prefix = file.fieldname === 'audio' ? 'audio' : 'cover';
-      cb(null, prefix + '-' + uniqueSuffix + path.extname(file.originalname));
-    },
-  }),
+  storage: memoryStorage,
   fileFilter: (req, file, cb) => {
     if (file.fieldname === 'audio') {
       audioFilter(req, file, cb);
@@ -90,16 +33,17 @@ const uploadSongFiles = multer({
       imageFilter(req, file, cb);
     }
   },
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
 }).fields([
   { name: 'audio', maxCount: 1 },
   { name: 'coverImage', maxCount: 1 },
 ]);
 
+// Avatar upload: single image
 const uploadAvatar = multer({
-  storage: avatarStorage,
+  storage: memoryStorage,
   fileFilter: imageFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 }).single('avatar');
 
 module.exports = { uploadSongFiles, uploadAvatar };

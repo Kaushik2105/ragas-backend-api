@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const path = require('path');
 const config = require('./config/config');
 const errorMiddleware = require('./middlewares/error.middleware');
 
@@ -43,8 +42,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Serve static uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.get('/', (req, res) => {
+  res.send('Go to ragas-frontend and listen to our most premium musics - By Kaushik Karmakar')
+})
 
 // Health check
 app.get('/api/health', (req, res) => {

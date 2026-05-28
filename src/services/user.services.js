@@ -1,5 +1,6 @@
 const { User } = require('../models');
 const { hashPassword } = require('../utils/bcrypt.utils');
+const { uploadToCloudinary } = require('../utils/cloudinary.utils');
 
 const getProfile = async (userId) => {
   const user = await User.findByPk(userId, {
@@ -36,13 +37,16 @@ const updateProfile = async (userId, updateData) => {
   };
 };
 
-const updateAvatar = async (userId, avatarPath) => {
+const updateAvatar = async (userId, fileBuffer) => {
   const user = await User.findByPk(userId);
   if (!user) {
     throw Object.assign(new Error('User not found.'), { statusCode: 404 });
   }
 
-  user.profilePic = avatarPath;
+  // Upload buffer directly to Cloudinary (no disk writes)
+  const avatarUrl = await uploadToCloudinary(fileBuffer, 'musicstream/avatars', 'image');
+
+  user.profilePic = avatarUrl;
   await user.save();
 
   return {

@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { Song, User, Feedback } = require('../models');
+const { uploadToCloudinary } = require('../utils/cloudinary.utils');
 
 const getAllSongs = async (query = {}) => {
   const { page = 1, limit = 20, genre, sort = 'createdAt', order = 'DESC' } = query;
@@ -93,14 +94,20 @@ const createSong = async (songData, files, adminId) => {
   const audioFile = files.audio[0];
   const coverFile = files.coverImage ? files.coverImage[0] : null;
 
+  // Upload buffers directly to Cloudinary (no disk writes)
+  const audioUrl = await uploadToCloudinary(audioFile.buffer, 'musicstream/audio', 'video');
+  const coverImage = coverFile
+    ? await uploadToCloudinary(coverFile.buffer, 'musicstream/covers', 'image')
+    : null;
+
   const song = await Song.create({
     title: songData.title,
     artist: songData.artist,
     album: songData.album || null,
     genre: songData.genre || null,
     duration: songData.duration || null,
-    audioUrl: `/uploads/audio/${audioFile.filename}`,
-    coverImage: coverFile ? `/uploads/images/${coverFile.filename}` : null,
+    audioUrl,
+    coverImage,
     uploadedBy: adminId,
   });
 
@@ -122,10 +129,12 @@ const updateSong = async (songId, updateData, files) => {
   }
 
   if (files && files.audio && files.audio[0]) {
-    updates.audioUrl = `/uploads/audio/${files.audio[0].filename}`;
+    const audioFile = files.audio[0];
+    updates.audioUrl = await uploadToCloudinary(audioFile.buffer, 'musicstream/audio', 'video');
   }
   if (files && files.coverImage && files.coverImage[0]) {
-    updates.coverImage = `/uploads/images/${files.coverImage[0].filename}`;
+    const coverFile = files.coverImage[0];
+    updates.coverImage = await uploadToCloudinary(coverFile.buffer, 'musicstream/covers', 'image');
   }
 
   await song.update(updates);

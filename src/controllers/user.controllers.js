@@ -24,8 +24,7 @@ const updateAvatar = async (req, res, next) => {
     if (!req.file) {
       return sendError(res, 400, 'Avatar image is required.');
     }
-    const avatarPath = `/uploads/avatars/${req.file.filename}`;
-    const user = await userService.updateAvatar(req.user.id, avatarPath);
+    const user = await userService.updateAvatar(req.user.id, req.file.buffer);
     return sendSuccess(res, 200, 'Avatar updated.', user);
   } catch (error) {
     next(error);
