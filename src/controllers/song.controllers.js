@@ -28,6 +28,15 @@ const searchSongs = async (req, res, next) => {
   }
 };
 
+const incrementPlayCount = async (req, res, next) => {
+  try {
+    const result = await songService.incrementPlayCount(req.params.id);
+    return sendSuccess(res, 200, 'Play count updated.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createSong = async (req, res, next) => {
   try {
     const song = await songService.createSong(req.body, req.files, req.user.id);
@@ -55,4 +64,4 @@ const deleteSong = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllSongs, getSongById, searchSongs, createSong, updateSong, deleteSong };
+module.exports = { getAllSongs, getSongById, incrementPlayCount, searchSongs, createSong, updateSong, deleteSong };

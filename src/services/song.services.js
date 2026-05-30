@@ -51,6 +51,17 @@ const getSongById = async (songId) => {
   return song;
 };
 
+const incrementPlayCount = async (songId) => {
+  const song = await Song.findByPk(songId);
+  if (!song) {
+    throw Object.assign(new Error('Song not found.'), { statusCode: 404 });
+  }
+
+  await song.increment('playCount');
+  await song.reload();
+  return { id: song.id, playCount: song.playCount };
+};
+
 const searchSongs = async (searchQuery) => {
   const { q, page = 1, limit = 20 } = searchQuery;
   if (!q) {
@@ -149,4 +160,4 @@ const deleteSong = async (songId) => {
   await song.destroy();
 };
 
-module.exports = { getAllSongs, getSongById, searchSongs, createSong, updateSong, deleteSong };
+module.exports = { getAllSongs, getSongById, incrementPlayCount, searchSongs, createSong, updateSong, deleteSong };

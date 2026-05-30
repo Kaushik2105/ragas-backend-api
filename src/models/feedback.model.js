@@ -37,6 +37,17 @@ const Feedback = sequelize.define('Feedback', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  reactions: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {},
+  },
+  isPinned: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'is_pinned',
+  },
 }, {
   tableName: 'feedback',
   timestamps: true,

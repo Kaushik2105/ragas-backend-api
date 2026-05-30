@@ -4,6 +4,7 @@ const playlistController = require('../controllers/playlist.controllers');
 const authMiddleware = require('../middlewares/auth.middleware');
 
 router.get('/', authMiddleware, playlistController.getUserPlaylists);
+router.get('/public', authMiddleware, playlistController.getPublicPlaylists);
 router.post('/', authMiddleware, playlistController.createPlaylist);
 router.get('/:id', authMiddleware, playlistController.getPlaylistById);
 router.put('/:id', authMiddleware, playlistController.updatePlaylist);

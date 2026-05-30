@@ -76,8 +76,8 @@ const forgotPassword = async (req, res, next) => {
     if (!email) {
       return sendError(res, 400, 'Email is required.');
     }
-    const token = await authService.forgotPassword(email);
-    return sendSuccess(res, 200, 'If that email exists, a reset link was generated.', { token });
+    const resetRequest = await authService.forgotPassword(email);
+    return sendSuccess(res, 200, 'If that email exists, a reset link was generated.', resetRequest || {});
   } catch (error) {
     next(error);
   }

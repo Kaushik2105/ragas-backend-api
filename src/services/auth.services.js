@@ -106,7 +106,11 @@ const forgotPassword = async (email) => {
   user.resetToken = resetToken;
   user.resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
   await user.save();
-  return resetToken;
+  return {
+    token: resetToken,
+    name: user.name,
+    email: user.email,
+  };
 };
 
 const resetPassword = async (token, newPassword) => {

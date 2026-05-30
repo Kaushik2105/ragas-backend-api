@@ -149,7 +149,23 @@ const getUsersGrowth = async () => {
     order: [[fn('DATE_TRUNC', 'month', col('created_at')), 'ASC']],
     raw: true,
   });
-  return result;
+
+  let cumulative = 0;
+  return result.map((row) => {
+    const count = parseInt(row.count, 10);
+    cumulative += count;
+    const month = new Date(row.month).toLocaleString('en-US', {
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+
+    return {
+      month,
+      count,
+      cumulative,
+    };
+  });
 };
 
 const getTopSongs = async (limitCount = 10) => {
@@ -174,7 +190,10 @@ const getGenreStats = async () => {
     order: [[fn('COUNT', col('id')), 'DESC']],
     raw: true,
   });
-  return result;
+  return result.map((row) => ({
+    genre: row.genre,
+    count: parseInt(row.count, 10),
+  }));
 };
 
 const getAllFeedback = async (query = {}) => {

@@ -16,6 +16,23 @@ const getUserPlaylists = async (userId) => {
   return playlists;
 };
 
+const getPublicPlaylists = async () => {
+  const playlists = await Playlist.findAll({
+    where: { isPublic: true },
+    include: [
+      { model: User, as: 'owner', attributes: ['id', 'name'] },
+      {
+        model: Song,
+        as: 'songs',
+        through: { attributes: [] },
+        attributes: ['id', 'title', 'artist', 'coverImage', 'duration', 'genre', 'audioUrl'],
+      },
+    ],
+    order: [['created_at', 'DESC']],
+  });
+  return playlists;
+};
+
 const getPlaylistById = async (playlistId, userId) => {
   const playlist = await Playlist.findByPk(playlistId, {
     include: [
@@ -128,6 +145,7 @@ const removeSongFromPlaylist = async (playlistId, songId, userId) => {
 
 module.exports = {
   getUserPlaylists,
+  getPublicPlaylists,
   getPlaylistById,
   createPlaylist,
   updatePlaylist,

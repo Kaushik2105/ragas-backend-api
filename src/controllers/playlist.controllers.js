@@ -10,6 +10,15 @@ const getUserPlaylists = async (req, res, next) => {
   }
 };
 
+const getPublicPlaylists = async (req, res, next) => {
+  try {
+    const playlists = await playlistService.getPublicPlaylists();
+    return sendSuccess(res, 200, 'Public playlists fetched.', playlists);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getPlaylistById = async (req, res, next) => {
   try {
     const playlist = await playlistService.getPlaylistById(req.params.id, req.user.id);
@@ -67,6 +76,7 @@ const removeSongFromPlaylist = async (req, res, next) => {
 
 module.exports = {
   getUserPlaylists,
+  getPublicPlaylists,
   getPlaylistById,
   createPlaylist,
   updatePlaylist,
