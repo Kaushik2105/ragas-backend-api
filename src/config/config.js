@@ -7,6 +7,6 @@ module.exports = {
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   adminEmail: process.env.ADMIN_EMAIL,
   adminPassword: process.env.ADMIN_PASSWORD,
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-  nodeEnv: process.env.NODE_ENV || 'development',
+  clientUrl: process.env.CLIENT_URL,
+  nodeEnv: process.env.NODE_ENV,
 };

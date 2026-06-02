@@ -57,7 +57,7 @@ const startServer = async () => {
     await connectDB();
 
     // Sync models (use { alter: true } in dev, { force: false } in prod)
-    await sequelize.sync({ alter: config.nodeEnv === 'development' });
+    await sequelize.sync({ alter: config.nodeEnv === 'production' });
     console.log('✅ Database synced');
 
     // Seed data
