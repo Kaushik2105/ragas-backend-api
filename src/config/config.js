@@ -9,4 +9,8 @@ module.exports = {
   adminPassword: process.env.ADMIN_PASSWORD,
   clientUrl: process.env.CLIENT_URL,
   nodeEnv: process.env.NODE_ENV,
+  emailjsOtpServiceId: process.env.EMAILJS_OTP_SERVICE_ID,
+  emailjsOtpTemplateId: process.env.EMAILJS_OTP_TEMPLATE_ID,
+  emailjsOtpPublicKey: process.env.EMAILJS_OTP_PUBLIC_KEY,
+  emailjsOtpPrivateKey: process.env.EMAILJS_OTP_PRIVATE_KEY,
 };

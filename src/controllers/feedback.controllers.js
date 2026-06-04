@@ -3,7 +3,7 @@ const { sendSuccess, sendError } = require('../utils/response.utils');
 
 const getAllFeedback = async (req, res, next) => {
   try {
-    const result = await feedbackService.getAllFeedback(req.query);
+    const result = await feedbackService.getAllFeedback(req.query, req.user.id);
     return sendSuccess(res, 200, 'Feedback fetched.', result);
   } catch (error) {
     next(error);
@@ -12,7 +12,7 @@ const getAllFeedback = async (req, res, next) => {
 
 const getSongFeedback = async (req, res, next) => {
   try {
-    const result = await feedbackService.getSongFeedback(req.params.songId, req.query);
+    const result = await feedbackService.getSongFeedback(req.params.songId, req.query, req.user.id);
     return sendSuccess(res, 200, 'Feedback fetched.', result);
   } catch (error) {
     next(error);
@@ -52,7 +52,7 @@ const reactToFeedback = async (req, res, next) => {
       return sendError(res, 400, 'Unsupported reaction emoji.');
     }
 
-    const feedback = await feedbackService.reactToFeedback(req.params.id, emoji);
+    const feedback = await feedbackService.reactToFeedback(req.params.id, req.user.id, emoji);
     return sendSuccess(res, 200, 'Reaction saved.', feedback);
   } catch (error) {
     next(error);

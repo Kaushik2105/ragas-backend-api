@@ -4,6 +4,8 @@ const Song = require('./song.model');
 const { Playlist, PlaylistSong } = require('./playlist.model');
 const Favorite = require('./favorite.model');
 const Feedback = require('./feedback.model');
+const FeedbackReaction = require('./feedback-reaction.model');
+const SignupOtp = require('./signup-otp.model');
 
 // ==================== Associations ====================
 
@@ -31,6 +33,14 @@ Favorite.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
 User.hasMany(Feedback, { foreignKey: 'user_id', as: 'feedbacks' });
 Feedback.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// User -> Feedback reactions
+User.hasMany(FeedbackReaction, { foreignKey: 'user_id', as: 'feedbackReactions' });
+FeedbackReaction.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Feedback -> Reactions
+Feedback.hasMany(FeedbackReaction, { foreignKey: 'feedback_id', as: 'reactionItems' });
+FeedbackReaction.belongsTo(Feedback, { foreignKey: 'feedback_id', as: 'feedback' });
+
 // Song -> Feedback
 Song.hasMany(Feedback, { foreignKey: 'song_id', as: 'feedbacks' });
 Feedback.belongsTo(Song, { foreignKey: 'song_id', as: 'song' });
@@ -43,4 +53,6 @@ module.exports = {
   PlaylistSong,
   Favorite,
   Feedback,
+  FeedbackReaction,
+  SignupOtp,
 };

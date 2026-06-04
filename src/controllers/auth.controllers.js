@@ -9,18 +9,54 @@ const refreshCookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+const requestRegistrationOtp = async (req, res, next) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!name || !email) {
+      return sendError(res, 400, 'Name and email are required.');
+    }
+    if (name.trim().length < 2) {
+      return sendError(res, 400, 'Name must be at least 2 characters.');
+    }
+
+    const result = await authService.requestRegistrationOtp({ name, email });
+    return sendSuccess(res, 200, 'OTP sent to your email.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyRegistrationOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return sendError(res, 400, 'Email and OTP are required.');
+    }
+    if (!/^\d{6}$/.test(String(otp))) {
+      return sendError(res, 400, 'Enter a valid 6-digit OTP.');
+    }
+
+    const result = await authService.verifyRegistrationOtp({ email, otp });
+    return sendSuccess(res, 200, 'Email verified.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password, verificationToken } = req.body;
 
-    if (!name || !email || !password) {
-      return sendError(res, 400, 'Name, email, and password are required.');
+    if (!email || !password || !verificationToken) {
+      return sendError(res, 400, 'Email, password, and verification token are required.');
     }
     if (password.length < 6) {
       return sendError(res, 400, 'Password must be at least 6 characters.');
     }
 
-    const result = await authService.register({ name, email, password });
+    const result = await authService.register({ email, password, verificationToken });
 
     // Set refresh token in HTTP-only cookie
     res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
@@ -114,4 +150,13 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, forgotPassword, resetPassword, refreshToken, logout };
+module.exports = {
+  requestRegistrationOtp,
+  verifyRegistrationOtp,
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  refreshToken,
+  logout,
+};
