@@ -1,8 +1,16 @@
 const { Sequelize } = require('sequelize');
 const config = require('./config');
 
+const isLocal = config.databaseUrl && (config.databaseUrl.includes('localhost') || config.databaseUrl.includes('127.0.0.1'));
+
 const sequelize = new Sequelize(config.databaseUrl, {
   dialect: 'postgres',
+  dialectOptions: isLocal ? {} : {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, 
+    }
+  },
   logging: false,
   pool: {
     max: 10,

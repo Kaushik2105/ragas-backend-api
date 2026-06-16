@@ -14,8 +14,29 @@ cloudinary.config({
  * @param {Buffer} fileBuffer - The file buffer from multer memoryStorage
  * @param {string} folder     - Target folder on Cloudinary
  * @param {'image' | 'video' | 'raw' | 'auto'} resourceType
- * @returns {Promise<string>} Secure HTTPS URL of the uploaded asset
+ * @returns {Promise<string>} Optimized secure HTTPS URL of the uploaded asset
  */
+const getOptimizedUrl = (result, resourceType) => {
+  if (!result?.public_id) return result?.secure_url || null;
+
+  const resolvedResourceType = resourceType === 'auto' ? result.resource_type : resourceType;
+  const imageTransforms = [{ fetch_format: 'auto', quality: 'auto' }];
+  const mediaTransforms = [{ quality: 'auto' }];
+  const transformation =
+    resolvedResourceType === 'image'
+      ? imageTransforms
+      : resolvedResourceType === 'video'
+        ? mediaTransforms
+        : undefined;
+
+  return cloudinary.url(result.public_id, {
+    resource_type: resolvedResourceType,
+    secure: true,
+    transformation,
+    format: result.format || undefined,
+  });
+};
+
 const uploadToCloudinary = (fileBuffer, folder = 'musicstream', resourceType = 'auto') => {
   return new Promise((resolve, reject) => {
     if (!fileBuffer) return resolve(null);
@@ -41,7 +62,7 @@ const uploadToCloudinary = (fileBuffer, folder = 'musicstream', resourceType = '
           }
           return reject(error);
         }
-        resolve(result.secure_url);
+        resolve(getOptimizedUrl(result, resourceType));
       }
     );
 

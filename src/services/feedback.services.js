@@ -125,7 +125,11 @@ const reactToFeedback = async (feedbackId, userId, emoji) => {
 
   const existingReaction = await FeedbackReaction.findOne({ where: { feedbackId, userId } });
   if (existingReaction) {
-    await existingReaction.update({ emoji });
+    if (existingReaction.emoji === emoji) {
+      await existingReaction.destroy();
+    } else {
+      await existingReaction.update({ emoji });
+    }
   } else {
     await FeedbackReaction.create({ feedbackId, userId, emoji });
   }
@@ -137,8 +141,12 @@ const reactToFeedback = async (feedbackId, userId, emoji) => {
   }, {});
 
   await feedback.update({ reactions });
-  const updated = feedback.toJSON();
-  return { ...updated, reactions, userReaction: emoji };
+
+  const updated = await Feedback.findByPk(feedbackId, {
+    include: feedbackIncludes,
+  });
+  const [withReaction] = await withUserReaction([updated], userId);
+  return withReaction;
 };
 
 const togglePinned = async (feedbackId) => {
