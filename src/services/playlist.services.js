@@ -8,7 +8,7 @@ const getUserPlaylists = async (userId) => {
         model: Song,
         as: 'songs',
         through: { attributes: [] },
-        attributes: ['id', 'title', 'artist', 'coverImage', 'duration'],
+        attributes: ['id', 'title', 'artist', 'coverImage', 'duration', 'genre', 'audioUrl', 'playCount'],
       },
     ],
     order: [['created_at', 'DESC']],
@@ -25,12 +25,23 @@ const getPublicPlaylists = async () => {
         model: Song,
         as: 'songs',
         through: { attributes: [] },
-        attributes: ['id', 'title', 'artist', 'coverImage', 'duration', 'genre', 'audioUrl'],
+        attributes: ['id', 'title', 'artist', 'coverImage', 'duration', 'genre', 'audioUrl', 'playCount'],
       },
     ],
     order: [['created_at', 'DESC']],
   });
-  return playlists;
+
+  return playlists
+    .map((playlist) => {
+      const data = playlist.toJSON();
+      data.totalPlayCount = (data.songs || []).reduce((total, song) => total + (Number(song.playCount) || 0), 0);
+      return data;
+    })
+    .sort((a, b) => {
+      const playCountDiff = b.totalPlayCount - a.totalPlayCount;
+      if (playCountDiff !== 0) return playCountDiff;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 };
 
 const getPlaylistById = async (playlistId, userId) => {
