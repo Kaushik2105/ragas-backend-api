@@ -9,16 +9,22 @@ const getAllSongs = async (query = {}) => {
 
   if (genre) where.genre = genre;
 
-  const { rows: songs, count: total } = await Song.findAndCountAll({
-    where,
-    include: [{ model: User, as: 'uploader', attributes: ['id', 'name'] }],
-    order: [[sort, order]],
-    limit: parseInt(limit),
-    offset: parseInt(offset),
-  });
+  const [songsAndCount, totalPlayCount] = await Promise.all([
+    Song.findAndCountAll({
+      where,
+      include: [{ model: User, as: 'uploader', attributes: ['id', 'name'] }],
+      order: [[sort, order]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    }),
+    Song.sum('playCount'),
+  ]);
+
+  const { rows: songs, count: total } = songsAndCount;
 
   return {
     songs,
+    totalPlayCount: totalPlayCount || 0,
     pagination: {
       total,
       page: parseInt(page),
