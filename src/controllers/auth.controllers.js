@@ -6,7 +6,7 @@ const refreshCookieOptions = {
   httpOnly: true,
   secure: config.nodeEnv === 'production',
   sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
 const requestRegistrationOtp = async (req, res, next) => {
@@ -150,11 +150,33 @@ const logout = async (req, res, next) => {
   }
 };
 
+const googleLogin = async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return sendError(res, 400, 'Google ID Token is required.');
+    }
+
+    const result = await authService.googleLogin(idToken);
+
+    res.cookie('refreshToken', result.refreshToken, refreshCookieOptions);
+
+    return sendSuccess(res, 200, 'Login successful.', {
+      user: result.user,
+      accessToken: result.accessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   requestRegistrationOtp,
   verifyRegistrationOtp,
   register,
   login,
+  googleLogin,
   forgotPassword,
   resetPassword,
   refreshToken,

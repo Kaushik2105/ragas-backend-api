@@ -2,8 +2,12 @@ const { Op } = require('sequelize');
 const { User, SignupOtp } = require('../models');
 const { hashPassword, comparePassword } = require('../utils/bcrypt.utils');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt.utils');
-const { sendRegistrationOtpEmail } = require('./email.services');
+const { sendRegistrationOtpEmail, sendWelcomeEmail } = require('./email.services');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
+const config = require('../config/config');
+
+const googleClient = new OAuth2Client(config.googleWebClientId);
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
 const VERIFIED_EXPIRY_MS = 15 * 60 * 1000;
@@ -131,6 +135,11 @@ const register = async ({ email, password, verificationToken }) => {
   await user.save();
   await signupOtp.destroy();
 
+  // Send welcome email in background
+  sendWelcomeEmail({ email: user.email, name: user.name }).catch((err) => {
+    console.error('❌ Error sending welcome email in register:', err);
+  });
+
   return {
     user: {
       id: user.id,
@@ -244,11 +253,83 @@ const logout = async (userId) => {
   }
 };
 
+const googleLogin = async (idToken) => {
+  if (!idToken) {
+    throw Object.assign(new Error('Google ID Token is required.'), { statusCode: 400 });
+  }
+
+  let ticket;
+  try {
+    ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: config.googleWebClientId,
+    });
+  } catch (error) {
+    throw Object.assign(new Error('Invalid Google ID Token.'), { statusCode: 401 });
+  }
+
+  const payload = ticket.getPayload();
+  const { email, name, picture } = payload;
+  const normalizedEmail = normalizeEmail(email);
+
+  let user = await User.findOne({ where: { email: normalizedEmail } });
+
+  if (!user) {
+    // Generate secure high-entropy random password so allowNull: false constraint is met
+    const randomPassword = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await hashPassword(randomPassword);
+
+    user = await User.create({
+      name: name || 'Google User',
+      email: normalizedEmail,
+      password: hashedPassword,
+      profilePic: picture || null,
+      role: 'user',
+    });
+
+    // Send welcome email in background for new signup
+    sendWelcomeEmail({ email: user.email, name: user.name }).catch((err) => {
+      console.error('❌ Error sending welcome email in googleLogin:', err);
+    });
+  } else {
+    // Check if account is active
+    if (!user.isActive) {
+      throw Object.assign(new Error('Account has been deactivated.'), { statusCode: 403 });
+    }
+
+    // Sync profile picture if they don't have one
+    if (!user.profilePic && picture) {
+      user.profilePic = picture;
+      await user.save();
+    }
+  }
+
+  const tokenPayload = { id: user.id, email: user.email, role: user.role };
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
+
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profilePic: user.profilePic,
+    },
+    accessToken,
+    refreshToken,
+  };
+};
+
 module.exports = {
   requestRegistrationOtp,
   verifyRegistrationOtp,
   register,
   login,
+  googleLogin,
   forgotPassword,
   resetPassword,
   refreshTokenService,

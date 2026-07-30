@@ -6,7 +6,7 @@ const generateAccessToken = (payload) => {
 };
 
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, config.jwtRefreshSecret, { expiresIn: '7d' });
+  return jwt.sign(payload, config.jwtRefreshSecret, { expiresIn: '30d' });
 };
 
 const verifyAccessToken = (token) => {

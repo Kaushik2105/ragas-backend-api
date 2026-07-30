@@ -13,4 +13,6 @@ module.exports = {
   emailjsOtpTemplateId: process.env.EMAILJS_OTP_TEMPLATE_ID,
   emailjsOtpPublicKey: process.env.EMAILJS_OTP_PUBLIC_KEY,
   emailjsOtpPrivateKey: process.env.EMAILJS_OTP_PRIVATE_KEY,
+  googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 };
