@@ -117,10 +117,21 @@ const deleteUser = async (userId) => {
 };
 
 const getAdminSongs = async (query = {}) => {
-  const { page = 1, limit = 20 } = query;
+  const { page = 1, limit = 20, search } = query;
   const offset = (page - 1) * limit;
+  const where = {};
+
+  if (search) {
+    where[Op.or] = [
+      { title: { [Op.iLike]: `%${search}%` } },
+      { artist: { [Op.iLike]: `%${search}%` } },
+      { album: { [Op.iLike]: `%${search}%` } },
+      { genre: { [Op.iLike]: `%${search}%` } },
+    ];
+  }
 
   const { rows: songs, count: total } = await Song.findAndCountAll({
+    where,
     include: [{ model: User, as: 'uploader', attributes: ['id', 'name'] }],
     order: [['created_at', 'DESC']],
     limit: parseInt(limit),
