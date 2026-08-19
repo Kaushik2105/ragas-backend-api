@@ -62,7 +62,7 @@ const sendPushNotifications = async ({ pushTokens, title, body, data = {} }) => 
   const fcmTokens = [];
 
   validTokens.forEach((token) => {
-    if (token.startsWith('ExpoPushToken[')) {
+    if (token.startsWith('ExponentPushToken[')) {
       expoTokens.push(token);
     } else {
       fcmTokens.push(token);
