@@ -71,17 +71,19 @@ const updatePushToken = async (userId, pushToken) => {
     throw Object.assign(new Error('User not found.'), { statusCode: 404 });
   }
 
-  const isFirstToken = !user.pushToken;
+  const previousToken = user.pushToken;
   user.pushToken = pushToken;
   await user.save();
 
-  if (isFirstToken) {
+  if (!previousToken) {
     const { sendPushNotifications } = require('./notification.service');
     sendPushNotifications({
       pushTokens: [pushToken],
       title: 'Welcome to RAGAS! 🎵',
-      body: `Hi ${user.name || 'there'}! Push notifications are enabled. Enjoy your streaming!`,
-    }).catch(() => {});
+      body: `Hi ${user.name || 'there'}! Welcome to RAGAS. Push notifications are now active!`,
+    }).catch((err) => {
+      console.error('❌ Error sending welcome push:', err);
+    });
   }
 
   return { id: user.id, pushToken: user.pushToken };

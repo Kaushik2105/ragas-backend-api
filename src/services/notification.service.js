@@ -1,8 +1,9 @@
-const admin = require('firebase-admin');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 const fs = require('fs');
 const path = require('path');
 
-let firebaseAdmin = null;
+let firebaseMessaging = null;
 
 try {
   const configDir = path.join(__dirname, '../../config');
@@ -14,17 +15,20 @@ try {
 
     if (serviceAccountFile) {
       const serviceAccount = require(path.join(configDir, serviceAccountFile));
-      const adminApp = admin.default || admin;
-      if (adminApp.credential && adminApp.initializeApp) {
-        firebaseAdmin = adminApp.initializeApp({
-          credential: adminApp.credential.cert(serviceAccount),
+      let app;
+      if (getApps().length === 0) {
+        app = initializeApp({
+          credential: cert(serviceAccount),
         });
-        console.log('✅ Firebase Admin SDK initialized successfully.');
+      } else {
+        app = getApps()[0];
       }
+      firebaseMessaging = getMessaging(app);
+      console.log('✅ Firebase Cloud Messaging (FCM) initialized successfully.');
     }
   }
 } catch (error) {
-  console.warn('Could not initialize Firebase Admin SDK:', error.message);
+  console.warn('⚠️ Could not initialize Firebase Admin SDK:', error.message);
 }
 
 const sendExpoPushChunk = async (messages) => {
@@ -62,7 +66,7 @@ const sendPushNotifications = async ({ pushTokens, title, body, data = {} }) => 
   const fcmTokens = [];
 
   validTokens.forEach((token) => {
-    if (token.startsWith('ExponentPushToken[')) {
+    if (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[')) {
       expoTokens.push(token);
     } else {
       fcmTokens.push(token);
@@ -72,7 +76,50 @@ const sendPushNotifications = async ({ pushTokens, title, body, data = {} }) => 
   let totalSuccess = 0;
   let totalFailure = 0;
 
-  // Send via Expo Push API
+  // 1. Send via FCM Direct (Primary for standalone Android APK)
+  if (fcmTokens.length > 0 && firebaseMessaging) {
+    try {
+      const stringData = {};
+      Object.keys(data || {}).forEach((key) => {
+        stringData[key] = String(data[key]);
+      });
+
+      const message = {
+        notification: {
+          title,
+          body,
+        },
+        data: stringData,
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'default',
+            sound: 'default',
+            priority: 'high',
+            defaultSound: true,
+            defaultVibrateTimings: true,
+          },
+        },
+        tokens: fcmTokens,
+      };
+
+      const response = await firebaseMessaging.sendEachForMulticast(message);
+      totalSuccess += response.successCount;
+      totalFailure += response.failureCount;
+
+      if (response.failureCount > 0) {
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            console.warn(`[FCM] Delivery failed for token: ${fcmTokens[idx]} - ${resp.error?.message}`);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('❌ FCM Multicast error:', e);
+    }
+  }
+
+  // 2. Send via Expo Push API (Fallback for Expo Go tokens)
   if (expoTokens.length > 0) {
     const messages = expoTokens.map((token) => ({
       to: token,
@@ -80,6 +127,8 @@ const sendPushNotifications = async ({ pushTokens, title, body, data = {} }) => 
       title,
       body,
       data,
+      channelId: 'default',
+      priority: 'high',
     }));
 
     const chunkSize = 100;
@@ -91,33 +140,10 @@ const sendPushNotifications = async ({ pushTokens, title, body, data = {} }) => 
     }
   }
 
-  // Send via FCM Direct
-  if (fcmTokens.length > 0 && firebaseAdmin) {
-    try {
-      const stringData = {};
-      Object.keys(data).forEach((key) => {
-        stringData[key] = String(data[key]);
-      });
-
-      const message = {
-        notification: { title, body },
-        data: stringData,
-        tokens: fcmTokens,
-      };
-
-      const adminApp = admin.default || admin;
-      const response = await adminApp.messaging().sendEachForMulticast(message);
-      totalSuccess += response.successCount;
-      totalFailure += response.failureCount;
-    } catch (e) {
-      console.error('FCM Multicast error:', e);
-    }
-  }
-
   return { successCount: totalSuccess, failureCount: totalFailure };
 };
 
 module.exports = {
   sendPushNotifications,
-  firebaseAdmin,
+  firebaseMessaging,
 };
