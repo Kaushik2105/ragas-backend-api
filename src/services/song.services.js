@@ -166,4 +166,106 @@ const deleteSong = async (songId) => {
   await song.destroy();
 };
 
-module.exports = { getAllSongs, getSongById, incrementPlayCount, searchSongs, createSong, updateSong, deleteSong };
+const parseArtistNames = (artistString) => {
+  if (!artistString) return [];
+  const names = artistString
+    .split(/,|\s+&\s+|\s+and\s+|\//i)
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+  return Array.from(new Set(names));
+};
+
+const getTopArtists = async (query = {}) => {
+  const { limit } = query;
+  const { Artist } = require('../models');
+  const allSongs = await Song.findAll({
+    attributes: ['id', 'artist', 'play_count', 'cover_image'],
+    raw: true,
+  });
+
+  const adminArtists = await Artist.findAll({ raw: true });
+  const adminArtistMap = new Map(adminArtists.map((a) => [a.name.toLowerCase().trim(), a]));
+
+  const artistStatsMap = new Map();
+
+  allSongs.forEach((song) => {
+    const names = parseArtistNames(song.artist);
+    const plays = parseInt(song.play_count || 0, 10);
+    names.forEach((name) => {
+      const key = name.toLowerCase().trim();
+      if (!artistStatsMap.has(key)) {
+        artistStatsMap.set(key, {
+          name,
+          songCount: 0,
+          totalPlays: 0,
+          fallbackCover: song.cover_image || null,
+        });
+      }
+      const item = artistStatsMap.get(key);
+      item.songCount += 1;
+      item.totalPlays += plays;
+      if (!item.fallbackCover && song.cover_image) {
+        item.fallbackCover = song.cover_image;
+      }
+    });
+  });
+
+  const sortedArtists = Array.from(artistStatsMap.values()).sort(
+    (a, b) => b.totalPlays - a.totalPlays
+  );
+
+  let result = sortedArtists.map((item) => {
+    const matchedAdmin = adminArtistMap.get(item.name.toLowerCase().trim());
+    return {
+      name: item.name,
+      songCount: item.songCount,
+      totalPlays: item.totalPlays,
+      imageUrl: matchedAdmin?.imageUrl || item.fallbackCover || null,
+      bio: matchedAdmin?.bio || null,
+    };
+  });
+
+  if (limit) {
+    result = result.slice(0, parseInt(limit, 10));
+  }
+
+  return result;
+};
+
+const getArtistSongs = async (artistName, query = {}) => {
+  const { page = 1, limit = 10 } = query;
+  const offset = (page - 1) * limit;
+
+  const { rows: songs, count: total } = await Song.findAndCountAll({
+    where: {
+      artist: { [Op.iLike]: `%${artistName}%` },
+    },
+    include: [{ model: User, as: 'uploader', attributes: ['id', 'name'] }],
+    order: [['play_count', 'DESC'], ['created_at', 'DESC']],
+    limit: parseInt(limit),
+    offset: parseInt(offset),
+  });
+
+  return {
+    songs,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / limit),
+      hasMore: parseInt(page) < Math.ceil(total / limit),
+    },
+  };
+};
+
+module.exports = {
+  getAllSongs,
+  getSongById,
+  incrementPlayCount,
+  searchSongs,
+  createSong,
+  updateSong,
+  deleteSong,
+  getTopArtists,
+  getArtistSongs,
+};

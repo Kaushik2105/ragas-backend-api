@@ -65,4 +65,26 @@ const deleteAccount = async (userId) => {
   await user.destroy();
 };
 
-module.exports = { getProfile, updateProfile, updateAvatar, deleteAccount };
+const updatePushToken = async (userId, pushToken) => {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw Object.assign(new Error('User not found.'), { statusCode: 404 });
+  }
+
+  const isFirstToken = !user.pushToken;
+  user.pushToken = pushToken;
+  await user.save();
+
+  if (isFirstToken) {
+    const { sendPushNotifications } = require('./notification.service');
+    sendPushNotifications({
+      pushTokens: [pushToken],
+      title: 'Welcome to RAGAS! 🎵',
+      body: `Hi ${user.name || 'there'}! Push notifications are enabled. Enjoy your streaming!`,
+    }).catch(() => {});
+  }
+
+  return { id: user.id, pushToken: user.pushToken };
+};
+
+module.exports = { getProfile, updateProfile, updateAvatar, deleteAccount, updatePushToken };

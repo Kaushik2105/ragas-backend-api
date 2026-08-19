@@ -6,6 +6,8 @@ const Favorite = require('./favorite.model');
 const Feedback = require('./feedback.model');
 const FeedbackReaction = require('./feedback-reaction.model');
 const SignupOtp = require('./signup-otp.model');
+const Notification = require('./notification.model');
+const Artist = require('./artist.model');
 
 // ==================== Associations ====================
 
@@ -55,4 +57,6 @@ module.exports = {
   Feedback,
   FeedbackReaction,
   SignupOtp,
+  Notification,
+  Artist,
 };

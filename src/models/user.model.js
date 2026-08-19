@@ -40,6 +40,11 @@ const User = sequelize.define('User', {
     allowNull: true,
     field: 'profile_pic',
   },
+  pushToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'push_token',
+  },
   refreshToken: {
     type: DataTypes.TEXT,
     allowNull: true,

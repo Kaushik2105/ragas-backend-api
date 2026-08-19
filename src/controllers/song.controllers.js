@@ -64,4 +64,32 @@ const deleteSong = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllSongs, getSongById, incrementPlayCount, searchSongs, createSong, updateSong, deleteSong };
+const getTopArtists = async (req, res, next) => {
+  try {
+    const result = await songService.getTopArtists(req.query);
+    return sendSuccess(res, 200, 'Top artists fetched.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getArtistSongs = async (req, res, next) => {
+  try {
+    const result = await songService.getArtistSongs(req.params.artistName, req.query);
+    return sendSuccess(res, 200, 'Artist songs fetched.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getAllSongs,
+  getSongById,
+  incrementPlayCount,
+  searchSongs,
+  createSong,
+  updateSong,
+  deleteSong,
+  getTopArtists,
+  getArtistSongs,
+};

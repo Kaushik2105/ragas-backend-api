@@ -41,4 +41,17 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
-module.exports = { getProfile, updateProfile, updateAvatar, deleteAccount };
+const updatePushToken = async (req, res, next) => {
+  try {
+    const { pushToken } = req.body;
+    if (!pushToken) {
+      return sendError(res, 400, 'Push token is required.');
+    }
+    const result = await userService.updatePushToken(req.user.id, pushToken);
+    return sendSuccess(res, 200, 'Push token updated.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getProfile, updateProfile, updateAvatar, deleteAccount, updatePushToken };

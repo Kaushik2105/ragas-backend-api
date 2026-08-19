@@ -17,5 +17,9 @@ router.get('/stats/users-growth', adminController.getUsersGrowth);
 router.get('/stats/top-songs', adminController.getTopSongs);
 router.get('/stats/genres', adminController.getGenreStats);
 router.get('/feedback', adminController.getAllFeedback);
+router.post('/notifications/send', adminController.sendNotification);
+router.get('/notifications', adminController.getNotifications);
+router.get('/artists', adminController.getAllArtists);
+router.post('/artists', adminController.setArtistImage);
 
 module.exports = router;

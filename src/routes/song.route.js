@@ -7,6 +7,8 @@ const { uploadSongFiles } = require('../middlewares/upload.middleware');
 
 router.get('/', authMiddleware, songController.getAllSongs);
 router.get('/search', authMiddleware, songController.searchSongs);
+router.get('/artists/top', authMiddleware, songController.getTopArtists);
+router.get('/artists/:artistName', authMiddleware, songController.getArtistSongs);
 router.post('/:id/play', authMiddleware, songController.incrementPlayCount);
 router.get('/:id', authMiddleware, songController.getSongById);
 router.post('/', authMiddleware, adminMiddleware, uploadSongFiles, songController.createSong);

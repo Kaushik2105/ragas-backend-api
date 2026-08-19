@@ -91,6 +91,53 @@ const getAllFeedback = async (req, res, next) => {
   }
 };
 
+const sendNotification = async (req, res, next) => {
+  try {
+    const { title, body, targetType, targetUserId } = req.body;
+    if (!title || !body) {
+      return res.status(400).json({ success: false, message: 'Title and body are required.' });
+    }
+    const result = await adminService.sendAdminNotification({
+      title,
+      body,
+      targetType,
+      targetUserId,
+      adminId: req.user.id,
+    });
+    return sendSuccess(res, 200, 'Notification sent.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getNotifications = async (req, res, next) => {
+  try {
+    const result = await adminService.getNotificationLogs(req.query);
+    return sendSuccess(res, 200, 'Notification logs fetched.', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const setArtistImage = async (req, res, next) => {
+  try {
+    const { name, imageUrl, bio } = req.body;
+    const artist = await adminService.setArtistImage({ name, imageUrl, bio });
+    return sendSuccess(res, 200, 'Artist details saved.', artist);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAllArtists = async (req, res, next) => {
+  try {
+    const artists = await adminService.getAllArtists();
+    return sendSuccess(res, 200, 'Artists fetched.', artists);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getDashboard,
   getAllUsers,
@@ -102,4 +149,8 @@ module.exports = {
   getTopSongs,
   getGenreStats,
   getAllFeedback,
+  sendNotification,
+  getNotifications,
+  setArtistImage,
+  getAllArtists,
 };

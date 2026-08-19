@@ -140,6 +140,17 @@ const register = async ({ email, password, verificationToken }) => {
     console.error('❌ Error sending welcome email in register:', err);
   });
 
+  // Send welcome notification
+  const { Notification } = require('../models');
+  Notification.create({
+    title: 'Welcome to RAGAS! 🎵',
+    body: `Hi ${user.name || 'there'}! Welcome to Ragas. Explore top tracks, playlists, and artists now.`,
+    targetType: 'user',
+    targetUserId: user.id,
+    status: 'sent',
+    deliveredCount: 0,
+  }).catch(() => {});
+
   return {
     user: {
       id: user.id,
