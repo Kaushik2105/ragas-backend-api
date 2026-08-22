@@ -6,26 +6,51 @@ const path = require('path');
 let firebaseMessaging = null;
 
 try {
-  const configDir = path.join(__dirname, '../../config');
-  if (fs.existsSync(configDir)) {
-    const files = fs.readdirSync(configDir);
-    const serviceAccountFile = files.find(
-      (f) => f.includes('firebase-adminsdk') && f.endsWith('.json')
-    );
+  let serviceAccount = null;
 
-    if (serviceAccountFile) {
-      const serviceAccount = require(path.join(configDir, serviceAccountFile));
-      let app;
-      if (getApps().length === 0) {
-        app = initializeApp({
-          credential: cert(serviceAccount),
-        });
+  // 1. Check if FIREBASE_SERVICE_ACCOUNT environment variable is set (Production / Render)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const envVal = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+      if (envVal.startsWith('{')) {
+        serviceAccount = JSON.parse(envVal);
       } else {
-        app = getApps()[0];
+        const decoded = Buffer.from(envVal, 'base64').toString('utf8');
+        serviceAccount = JSON.parse(decoded);
       }
-      firebaseMessaging = getMessaging(app);
-      console.log('✅ Firebase Cloud Messaging (FCM) initialized successfully.');
+    } catch (e) {
+      console.warn('⚠️ Could not parse FIREBASE_SERVICE_ACCOUNT env var:', e.message);
     }
+  }
+
+  // 2. Check local config directory (Local development)
+  if (!serviceAccount) {
+    const configDir = path.join(__dirname, '../../config');
+    if (fs.existsSync(configDir)) {
+      const files = fs.readdirSync(configDir);
+      const serviceAccountFile = files.find(
+        (f) => f.includes('firebase-adminsdk') && f.endsWith('.json')
+      );
+
+      if (serviceAccountFile) {
+        serviceAccount = require(path.join(configDir, serviceAccountFile));
+      }
+    }
+  }
+
+  if (serviceAccount) {
+    let app;
+    if (getApps().length === 0) {
+      app = initializeApp({
+        credential: cert(serviceAccount),
+      });
+    } else {
+      app = getApps()[0];
+    }
+    firebaseMessaging = getMessaging(app);
+    console.log('✅ Firebase Cloud Messaging (FCM) initialized successfully.');
+  } else {
+    console.warn('⚠️ Firebase credentials not found. Set FIREBASE_SERVICE_ACCOUNT in your environment or place JSON in config/.');
   }
 } catch (error) {
   console.warn('⚠️ Could not initialize Firebase Admin SDK:', error.message);
@@ -77,45 +102,49 @@ const sendPushNotifications = async ({ pushTokens, title, body, data = {} }) => 
   let totalFailure = 0;
 
   // 1. Send via FCM Direct (Primary for standalone Android APK)
-  if (fcmTokens.length > 0 && firebaseMessaging) {
-    try {
-      const stringData = {};
-      Object.keys(data || {}).forEach((key) => {
-        stringData[key] = String(data[key]);
-      });
-
-      const message = {
-        notification: {
-          title,
-          body,
-        },
-        data: stringData,
-        android: {
-          priority: 'high',
-          notification: {
-            channelId: 'default',
-            sound: 'default',
-            priority: 'high',
-            defaultSound: true,
-            defaultVibrateTimings: true,
-          },
-        },
-        tokens: fcmTokens,
-      };
-
-      const response = await firebaseMessaging.sendEachForMulticast(message);
-      totalSuccess += response.successCount;
-      totalFailure += response.failureCount;
-
-      if (response.failureCount > 0) {
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success) {
-            console.warn(`[FCM] Delivery failed for token: ${fcmTokens[idx]} - ${resp.error?.message}`);
-          }
+  if (fcmTokens.length > 0) {
+    if (firebaseMessaging) {
+      try {
+        const stringData = {};
+        Object.keys(data || {}).forEach((key) => {
+          stringData[key] = String(data[key]);
         });
+
+        const message = {
+          notification: {
+            title,
+            body,
+          },
+          data: stringData,
+          android: {
+            priority: 'high',
+            notification: {
+              channelId: 'default',
+              sound: 'default',
+              priority: 'high',
+              defaultSound: true,
+              defaultVibrateTimings: true,
+            },
+          },
+          tokens: fcmTokens,
+        };
+
+        const response = await firebaseMessaging.sendEachForMulticast(message);
+        totalSuccess += response.successCount;
+        totalFailure += response.failureCount;
+
+        if (response.failureCount > 0) {
+          response.responses.forEach((resp, idx) => {
+            if (!resp.success) {
+              console.warn(`[FCM] Delivery failed for token: ${fcmTokens[idx]} - ${resp.error?.message}`);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('❌ FCM Multicast error:', e);
       }
-    } catch (e) {
-      console.error('❌ FCM Multicast error:', e);
+    } else {
+      console.warn('⚠️ Cannot send FCM: Firebase Admin SDK is not initialized on this server.');
     }
   }
 

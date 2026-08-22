@@ -260,7 +260,7 @@ const sendAdminNotification = async ({ title, body, targetType = 'all', targetUs
     targetType,
     targetUserId: targetType === 'user' ? targetUserId : null,
     sentBy: adminId,
-    status: 'sent',
+    status: successCount > 0 ? 'sent' : (pushTokens.length === 0 ? 'no_recipients' : 'failed'),
     deliveredCount: successCount,
   });
 
