@@ -37,4 +37,40 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      req.user = null;
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    try {
+      const decoded = verifyAccessToken(token);
+      const user = await User.findByPk(decoded.id, {
+        attributes: { exclude: ['password', 'refreshToken'] },
+      });
+      req.user = user && user.isActive ? user : null;
+    } catch {
+      req.user = null;
+    }
+
+    next();
+  } catch {
+    req.user = null;
+    next();
+  }
+};
+
+authMiddleware.authMiddleware = authMiddleware;
+authMiddleware.optionalAuth = optionalAuth;
+
 module.exports = authMiddleware;
+module.exports.optionalAuth = optionalAuth;
+

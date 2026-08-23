@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const playlistController = require('../controllers/playlist.controllers');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { authMiddleware, optionalAuth } = require('../middlewares/auth.middleware');
 
 router.get('/', authMiddleware, playlistController.getUserPlaylists);
-router.get('/public', authMiddleware, playlistController.getPublicPlaylists);
+router.get('/public', optionalAuth, playlistController.getPublicPlaylists);
 router.post('/', authMiddleware, playlistController.createPlaylist);
-router.get('/:id', authMiddleware, playlistController.getPlaylistById);
+router.get('/:id', optionalAuth, playlistController.getPlaylistById);
 router.put('/:id', authMiddleware, playlistController.updatePlaylist);
 router.delete('/:id', authMiddleware, playlistController.deletePlaylist);
 router.post('/:id/songs', authMiddleware, playlistController.addSongToPlaylist);

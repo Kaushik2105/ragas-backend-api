@@ -21,7 +21,7 @@ const getPublicPlaylists = async (req, res, next) => {
 
 const getPlaylistById = async (req, res, next) => {
   try {
-    const playlist = await playlistService.getPlaylistById(req.params.id, req.user.id);
+    const playlist = await playlistService.getPlaylistById(req.params.id, req.user?.id);
     return sendSuccess(res, 200, 'Playlist fetched.', playlist);
   } catch (error) {
     next(error);
