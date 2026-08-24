@@ -2,6 +2,7 @@ const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getMessaging } = require('firebase-admin/messaging');
 const fs = require('fs');
 const path = require('path');
+const config = require('../config/config');
 
 let firebaseMessaging = null;
 
@@ -9,9 +10,9 @@ try {
   let serviceAccount = null;
 
   // 1. Check if FIREBASE_SERVICE_ACCOUNT environment variable is set (Production / Render)
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  if (config.firebaseServiceAccount) {
     try {
-      const envVal = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+      const envVal = config.firebaseServiceAccount.trim();
       if (envVal.startsWith('{')) {
         serviceAccount = JSON.parse(envVal);
       } else {

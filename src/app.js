@@ -16,7 +16,7 @@ const adminRoutes = require('./routes/admin.route');
 const app = express();
 
 // Middleware
-const allowedOrigins = (process.env.CLIENT_URLS || config.clientUrl || '')
+const allowedOrigins = (config.clientUrls || config.clientUrl || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);

@@ -41,10 +41,10 @@ const sendRegistrationOtpEmail = async ({ email, name, otp }) => {
 };
 
 const sendWelcomeEmail = async ({ email, name }) => {
-  const serviceId = process.env.EMAILJS_WELCOME_SERVICE_ID || 'service_assbfr8';
-  const templateId = process.env.EMAILJS_WELCOME_TEMPLATE_ID || 'template_3lq6w1v';
-  const publicKey = process.env.EMAILJS_WELCOME_PUBLIC_KEY || 'ocRaySd72sJfW-_7m';
-  const privateKey = process.env.EMAILJS_WELCOME_PRIVATE_KEY || 'fARHhyG6Ck5GPECAjJ4OR';
+  const serviceId = config.emailjsWelcomeServiceId;
+  const templateId = config.emailjsWelcomeTemplateId;
+  const publicKey = config.emailjsWelcomePublicKey;
+  const privateKey = config.emailjsWelcomePrivateKey;
 
   if (!serviceId || !templateId || !publicKey) {
     console.warn('⚠️ EmailJS Welcome Config is missing. Skipping email.');
@@ -59,7 +59,7 @@ const sendWelcomeEmail = async ({ email, name }) => {
       to_email: email,
       to_name: name || email,
       app_name: 'RAGAS',
-      login_link: 'https://ragas-frontend.netlify.app/',
+      login_link: config.clientUrl || 'https://ragas-frontend.netlify.app/',
     },
   };
 
